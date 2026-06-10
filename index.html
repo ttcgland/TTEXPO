@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地政處重劃科 ─ 導覽子母機預約系統</title>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --pending-bg: #ffebee;
+            --pending-border: #ef9a9a;
+            --pending-text: #c62828;
+            --approved-bg: #fffde7;
+            --approved-border: #fff59d;
+            --approved-text: #f57f17;
+            --gray-light: #f8f9fa;
+            --gray-border: #dee2e6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f4f6f9;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 24px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .btn:disabled {
+            background-color: #bdc3c7 !important;
+            cursor: not-allowed;
+            color: #fff !important;
+        }
+
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-primary:hover { background-color: #357abd; }
+        .btn-admin { background-color: #34495e; color: white; }
+        .btn-admin:hover { background-color: #2c3e50; }
+        .btn-danger { background-color: #e74c3c; color: white; }
+        .btn-danger:hover { background-color: #c0392b; }
+        .btn-secondary { background-color: #95a5a6; color: white; }
+        .btn-secondary:hover { background-color: #7f8c8d; }
+
+        .calendar-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .calendar-nav h2 {
+            font-size: 20px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(120px, 1fr));
+            border-top: 1px solid var(--gray-border);
+            border-left: 1px solid var(--gray-border);
+        }
+
+        .calendar-header {
+            background-color: #6c757d;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            font-weight: bold;
+            border-right: 1px solid var(--gray-border);
+            border-bottom: 1px solid var(--gray-border);
+        }
+
+        .calendar-header.weekend {
+            background-color: #e74c3c;
+        }
+
+        .calendar-day {
+            min-height: 140px;
+            background-color: white;
+            border-right: 1px solid var(--gray-border);
+            border-bottom: 1px solid var(--gray-border);
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .calendar-day:hover {
+            background-color: #f1f8ff;
+        }
+
+        .calendar-day.other-month {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+            color: #adb5bd;
+        }
+
+        .calendar-day.out-of-range {
+            background-color: #f8f9fa;
+            color: #ced4da;
+        }
+
+        .day-number {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .weekend-day {
+            color: #e74c3c;
+        }
+
+        .event-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            max-height: 120px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .event-item {
+            font-size: 11px;
+            padding: 4px;
+            border-radius: 3px;
+            border-left: 3px solid;
+            line-height: 1.3;
+        }
+
+        .event-item.pending { background-color: var(--pending-bg); border-color: var(--pending-border); color: var(--pending-text); }
+        .event-item.approved { background-color: var(--approved-bg); border-color: var(--approved-border); color: var(--approved-text); }
+
+        .event-admin-actions {
+            margin-top: 3px;
+            display: flex;
+            gap: 2px;
+        }
+
+        .btn-mini { padding: 1px 4px; font-size: 9px; border-radius: 2px; }
+
+        /* 讀取中遮罩 */
+        .loading-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            z-index: 100;
+            display: none;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .modal-content {
+            background: white; padding: 25px; border-radius: 8px;
+            width: 100%; max-width: 600px; max-height: 90vh;
+            overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .modal-header { font-size: 20px; font-weight: bold; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--gray-border); color: #2c3e50; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-row { display: flex; gap: 15px; }
+        .form-row .form-group { flex: 1; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--gray-border); border-radius: 4px; font-size: 14px; }
+        .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid var(--gray-border); padding-top: 15px; }
+        .info-text { font-size: 12px; color: #7f8c8d; margin-top: 2px; }
+        .admin-badge { background-color: #e67e22; color: white; padding: 3px 8px; border-radius: 20px; font-size: 12px; display: none; }
+
+        @media (max-width: 768px) {
+            .calendar-grid { grid-template-columns: repeat(1, 1fr); border-left: none; }
+            .calendar-header { display: none; }
+            .calendar-day { min-height: auto; border-left: 1px solid var(--gray-border); margin-bottom: 5px; border-radius: 4px; }
+            .day-number { background-color: #f8f9fa; padding: 4px; border-radius: 3px; display: flex; justify-content: space-between; }
+            .day-number::after { content: attr(data-weekday); font-weight: normal; color: #6c757d; }
+            .form-row { flex-direction: column; gap: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="disclaimerModal" class="modal-overlay active">
+    <div class="modal-content" style="max-width: 650px;">
+        <div class="modal-header" style="text-align: center; color: #c62828; border-bottom: 2px solid #ef9a9a; padding-bottom: 12px;">
+            📢 導覽子母機預約系統 ─ 系統使用須知
+        </div>
+        
+        <div id="disclaimerBody" style="max-height: 280px; overflow-y: auto; padding: 15px; border: 1px solid var(--gray-border); border-radius: 4px; margin-bottom: 15px; background: #fffdf7; line-height: 1.7; font-size: 14.5px; color: #2c3e50;">
+            <p style="margin-bottom: 12px; font-weight: bold; color: #000;">歡迎使用本系統，提出預約申請前請務必詳閱並遵守以下規範：</p>
+            <ol style="padding-left: 20px; display: flex; flex-direction: column; gap: 10px;">
+                <li>本系統是由<strong>地政處重劃科</strong>管理，僅供各單位預約導覽子母機使用。</li>
+                <li>最遲請於<strong>3日前完成申請</strong>，以利調派；如遇特殊情形，請電話聯繫重劃科(326141#369 林語昕)。</li>
+                <li>提出申請後，重劃科輪值人員將於<strong>每日下班前電話聯繫預約結果</strong>，請耐心等候。</li>
+                <li>為後續子母機歸還消毒作業，請各單位<strong>確實依期取用、歸還</strong>。</li>
+                <li>如係預約 09:00 開始使用，請於<strong>前一日下午 18:00 前</strong>完成領取。</li>
+            </ol>
+            <div style="height: 30px; text-align: center; color: #95a5a6; font-size: 12px; margin-top: 20px;">--- 已滑動至條款最底部 ---</div>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+            <label id="checkboxLabel" style="display: flex; align-items: center; gap: 8px; cursor: not-allowed; font-size: 14.5px; font-weight: bold; color: #95a5a6; transition: color 0.3s; opacity: 0.6;">
+                <input type="checkbox" id="agreeCheckbox" disabled onchange="toggleEnterBtn(this.checked)" style="width: 18px; height: 18px; cursor: not-allowed;">
+                <span>我已充分閱讀並同意遵守上述使用須知 <span id="scrollTip" style="font-weight: normal; font-size: 12px; color: #e74c3c;">(請先向下滑動條款至最底部)</span></span>
+            </label>
+            <button id="enterSystemBtn" class="btn btn-primary" onclick="closeDisclaimerModal()" disabled style="width: 100%; max-width: 200px; font-size: 16px; padding: 10px 0; border-radius: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">進入預約系統</button>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div id="loadingOverlay" class="loading-overlay">雲端資料同步中，請稍候...</div>
+
+    <header>
+        <div>
+            <h1>地政處重劃科 ─ 導覽子母機預約系統</h1>
+            <p class="info-text">管理單位：地政處重劃科 | 服務電話：326141#369 | 每日可用時段：09:00 ~ 18:00</p>
+        </div>
+        <div class="header-controls">
+            <span id="adminBadge" class="admin-badge">管理者模式</span>
+            <button id="adminBtn" class="btn btn-admin" onclick="toggleAdminLogin()">後臺登入</button>
+        </div>
+    </header>
+
+    <div class="calendar-nav">
+        <button class="btn btn-secondary" onclick="changeMonth(-1)">◀ 上個月</button>
+        <h2 id="calendarTitle">2026 年 06 月</h2>
+        <button class="btn btn-secondary" onclick="changeMonth(1)">下個月 ▶</button>
+    </div>
+
+    <div class="calendar-grid" id="calendarGrid"></div>
+</div>
+
+<div id="bookingModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">導覽子母機借用申請單</div>
+        <form id="bookingForm" onsubmit="handleBookingSubmit(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="dept">局處 *</label>
+                    <input type="text" id="dept" required placeholder="例如：地政處">
+                </div>
+                <div class="form-group">
+                    <label for="section">科別 *</label>
+                    <input type="text" id="section" required placeholder="例如：重劃科">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="contact">聯絡人 *</label>
+                    <input type="text" id="contact" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">聯絡方式 (電話) *</label>
+                    <input type="text" id="phone" required placeholder="例如：326141#369">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="email">E-MAIL *</label>
+                <input type="email" id="email" required>
+            </div>
+            <div class="form-group">
+                <label for="purpose">事由 *</label>
+                <textarea id="purpose" rows="2" required placeholder="請輸入導覽活動用途說明"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="qty">借用數量 (組/台) *</label>
+                <input type="number" id="qty" min="1" max="100" required value="1">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="startDate">預計借用起日 *</label>
+                    <input type="date" id="startDate" required onchange="syncEndDate(this.value)">
+                </div>
+                <div class="form-group">
+                    <label for="startTime">起始時間 *</label>
+                    <select id="startTime" required></select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="endDate">預計歸還迄日 *</label>
+                    <input type="date" id="endDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="endTime">歸還時間 *</label>
+                    <select id="endTime" required></select>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('bookingModal')">取消</button>
+                <button type="button" class="btn btn-danger" onclick="clearForm()">全部清除</button>
+                <button type="submit" id="submitBtn" class="btn btn-primary">送出申請</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="loginModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 350px;">
+        <div class="modal-header">管理者登入</div>
+        <div class="form-group">
+            <label for="username">帳號</label>
+            <input type="text" id="username" value="admin">
+        </div>
+        <div class="form-group">
+            <label for="password">密碼</label>
+            <input type="password" id="password" value="admin123">
+        </div>
+        <p class="info-text" style="margin-bottom:15px;">預設測試帳密：admin / admin123</p>
+        <div class="form-actions" style="margin-top:0; padding-top:10px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('loginModal')">取消</button>
+            <button type="button" class="btn btn-primary" onclick="processLogin()">登入</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ⚠️ 請在此處貼上您從 Google Apps Script 複製的網頁應用程式 URL
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxa6nrxjPqYUzpy84O-_RchmCfOhl1M4OTjZBuNBtLjYjzfaryPgiWIxUJfIVM17ajGrA/exec';
+
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth(); 
+    let isAdminMode = false;
+    let bookingData = [];
+
+    const weekdaysTitle = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+
+    window.onload = function() {
+        initTimeDropdowns();
+        setupDisclaimerScrollListener(); // 啟用使用須知滑動監聽
+        fetchCloudData(); 
+        
+        // 初始化設定今天日期為申請日期的預設最小值（最遲3日前申請可在送出時驗證或由使用者控管）
+        const todayStr = new Date().toISOString().split('T')[0];
+        document.getElementById('startDate').min = todayStr;
+        document.getElementById('endDate').min = todayStr;
+    };
+
+    // 監聽使用須知滾動條
+    function setupDisclaimerScrollListener() {
+        const body = document.getElementById('disclaimerBody');
+        const checkbox = document.getElementById('agreeCheckbox');
+        const label = document.getElementById('checkboxLabel');
+        const tip = document.getElementById('scrollTip');
+
+        body.addEventListener('scroll', function() {
+            // 當捲動到底部（容許 8 像素誤差值，避免跨裝置瀏覽器縮放產生的計算誤差）
+            if (body.scrollHeight - body.scrollTop <= body.clientHeight + 8) {
+                checkbox.disabled = false;
+                checkbox.style.cursor = 'pointer';
+                label.style.cursor = 'pointer';
+                label.style.color = '#2c3e50';
+                label.style.opacity = '1';
+                tip.style.display = 'none'; // 隱藏提示文字
+            }
+        });
+    }
+
+    // 控制「進入系統」按鈕啟用狀態
+    function toggleEnterBtn(isChecked) {
+        document.getElementById('enterSystemBtn').disabled = !isChecked;
+    }
+
+    // 關閉說明視窗正式進入系統
+    function closeDisclaimerModal() {
+        document.getElementById('disclaimerModal').classList.remove('active');
+    }
+
+    function showLoading(status) {
+        document.getElementById('loadingOverlay').style.display = status ? 'flex' : 'none';
+    }
+
+    // 從 Google Sheet 抓取預約資料
+    async function fetchCloudData() {
+        showLoading(true);
+        try {
+            const response = await fetch(GAS_WEB_APP_URL);
+            if (!response.ok) throw new Error('網路錯誤');
+            bookingData = await response.json();
+            renderCalendar();
+        } catch (error) {
+            console.error('抓取資料失敗:', error);
+            alert('無法連線至雲端資料庫，請檢查 Google 部署設定或稍後再試。');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    function initTimeDropdowns() {
+        const startSelect = document.getElementById('startTime');
+        const endSelect = document.getElementById('endTime');
+        for(let h = 9; h <= 18; h++) {
+            let timeStr = (h < 10 ? '0' + h : h) + ':00';
+            let optStart = document.createElement('option');
+            optStart.value = timeStr; optStart.textContent = timeStr;
+            startSelect.appendChild(optStart);
+            let optEnd = document.createElement('option');
+            optEnd.value = timeStr; optEnd.textContent = timeStr;
+            endSelect.appendChild(optEnd);
+        }
+    }
+
+    function renderCalendar() {
+        const grid = document.getElementById('calendarGrid');
+        const title = document.getElementById('calendarTitle');
+        grid.innerHTML = '';
+        title.textContent = `${currentYear} 年 ${String(currentMonth + 1).padStart(2, '0')} 月`;
+
+        weekdaysTitle.forEach((day, index) => {
+            const headerCell = document.createElement('div');
+            headerCell.className = 'calendar-header';
+            if(index === 0 || index === 6) headerCell.classList.add('weekend');
+            headerCell.textContent = day;
+            grid.appendChild(headerCell);
+        });
+
+        const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+        for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+            createDayCell(grid, currentYear, currentMonth - 1, daysInPrevMonth - i, true);
+        }
+        for (let d = 1; d <= daysInMonth; d++) {
+            createDayCell(grid, currentYear, currentMonth, d, false);
+        }
+        const totalCellsSoFar = firstDayOfMonth + daysInMonth;
+        const remainingCells = 42 - totalCellsSoFar;
+        for (let i = 1; i <= remainingCells; i++) {
+            createDayCell(grid, currentYear, currentMonth + 1, i, true);
+        }
+    }
+
+    function createDayCell(gridTarget, year, month, day, isOtherMonth) {
+        let targetDate = new Date(year, month, day);
+        let y = targetDate.getFullYear();
+        let m = targetDate.getMonth();
+        let d = targetDate.getDate();
+
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day';
+        const dayOfWeek = targetDate.getDay();
+        cell.setAttribute('data-weekday', weekdaysTitle[dayOfWeek]);
+
+        const numDiv = document.createElement('div');
+        numDiv.className = 'day-number';
+        numDiv.textContent = d;
+        if(dayOfWeek === 0 || dayOfWeek === 6) numDiv.classList.add('weekend-day');
+        cell.appendChild(numDiv);
+
+        if (isOtherMonth) {
+            cell.classList.add('other-month');
+        } else {
+            cell.onclick = function(e) {
+                if(e.target.tagName !== 'BUTTON') openBookingModal(y, m, d);
+            };
+        }
+
+        const dayString = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const todayEvents = bookingData.filter(evt => dayString >= evt.startDate && dayString <= evt.endDate);
+
+        const listContainer = document.createElement('div');
+        listContainer.className = 'event-list';
+
+        todayEvents.forEach(evt => {
+            const evtDiv = document.createElement('div');
+            evtDiv.className = `event-item ${evt.status}`;
+            let statusText = evt.status === 'approved' ? '已通過' : '待審核';
+
+            evtDiv.innerHTML = `
+                <strong>${evt.startTime} ~ ${evt.endTime}</strong> [${statusText}]<br>
+                ${evt.dept} ─ ${evt.section}<br>
+                借用人: ${evt.contact}<br>
+                數量: ${evt.qty} 台
+            `;
+
+            if (isAdminMode) {
+                const actionDiv = document.createElement('div');
+                actionDiv.className = 'event-admin-actions';
+                if (evt.status === 'pending') {
+                    const approveBtn = document.createElement('button');
+                    approveBtn.className = 'btn btn-primary btn-mini';
+                    approveBtn.textContent = '核准';
+                    approveBtn.onclick = function() { updateCloudStatus(evt.id, 'approved'); };
+                    actionDiv.appendChild(approveBtn);
+                }
+                const rejectBtn = document.createElement('button');
+                rejectBtn.className = 'btn btn-danger btn-mini';
+                rejectBtn.textContent = '駁回';
+                rejectBtn.onclick = function() { deleteCloudBooking(evt.id); };
+                actionDiv.appendChild(rejectBtn);
+                evtDiv.appendChild(actionDiv);
+            }
+            listContainer.appendChild(evtDiv);
+        });
+
+        cell.appendChild(listContainer);
+        gridTarget.appendChild(cell);
+    }
+
+    function changeMonth(direction) {
+        currentMonth += direction;
+        if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+        else if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+        renderCalendar();
+    }
+
+    function openBookingModal(y, m, d) {
+        const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        document.getElementById('bookingForm').reset();
+        document.getElementById('startDate').value = dateStr;
+        document.getElementById('endDate').value = dateStr;
+        document.getElementById('bookingModal').classList.add('active');
+    }
+
+    function syncEndDate(val) { document.getElementById('endDate').value = val; }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    function clearForm() {
+        const savedStartDate = document.getElementById('startDate').value;
+        const savedEndDate = document.getElementById('endDate').value;
+        document.getElementById('bookingForm').reset();
+        document.getElementById('startDate').value = savedStartDate;
+        document.getElementById('endDate').value = savedEndDate;
+    }
+
+    // 傳送新預約到雲端試算表
+    async function handleBookingSubmit(e) {
+        e.preventDefault();
+        const startDate = document.getElementById('startDate').value;
+        const startTime = document.getElementById('startTime').value;
+        const endDate = document.getElementById('endDate').value;
+        const endTime = document.getElementById('endTime').value;
+
+        if (new Date(`${startDate}T${startTime}`) > new Date(`${endDate}T${endTime}`)) {
+            alert('錯誤：歸還時間不得早於借用起始時間！');
+            return;
+        }
+
+        const newBooking = {
+            id: 'evt_' + Date.now(),
+            dept: document.getElementById('dept').value,
+            section: document.getElementById('section').value,
+            contact: document.getElementById('contact').value,
+            phone: document.getElementById('phone').value,
+            email: document.getElementById('email').value,
+            purpose: document.getElementById('purpose').value,
+            qty: parseInt(document.getElementById('qty').value),
+            startDate: startDate,
+            startTime: startTime,
+            endDate: endDate,
+            endTime: endTime,
+            status: 'pending',
+            submitTimestamp: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })
+        };
+
+        showLoading(true);
+        try {
+            const response = await fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'create', data: newBooking })
+            });
+            const resData = await response.json();
+            if (resData.result === 'success') {
+                closeModal('bookingModal');
+                alert('申請已成功送出！資料已同步至雲端試算表。');
+                await fetchCloudData(); 
+            }
+        } catch (error) {
+            alert('上傳失敗，請稍後再試。');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    function toggleAdminLogin() {
+        if (isAdminMode) {
+            isAdminMode = false;
+            document.getElementById('adminBtn').textContent = '後臺登入';
+            document.getElementById('adminBtn').className = 'btn btn-admin';
+            document.getElementById('adminBadge').style.display = 'none';
+            renderCalendar();
+        } else {
+            document.getElementById('loginModal').classList.add('active');
+        }
+    }
+
+    function processLogin() {
+        const u = document.getElementById('username').value;
+        const p = document.getElementById('password').value;
+        if (u === 'admin' && p === 'admin123') { 
+            isAdminMode = true;
+            document.getElementById('adminBtn').textContent = '安全登出';
+            document.getElementById('adminBtn').className = 'btn btn-danger';
+            document.getElementById('adminBadge').style.display = 'inline-block';
+            closeModal('loginModal');
+            renderCalendar();
+        } else {
+            alert('帳號或密碼輸入錯誤！');
+        }
+    }
+
+    // 雲端核准更新
+    async function updateCloudStatus(id, newStatus) {
+        showLoading(true);
+        try {
+            await fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'update', id: id, status: newStatus })
+            });
+            await fetchCloudData();
+        } catch (error) {
+            alert('更新失敗');
+            showLoading(false);
+        }
+    }
+
+    // 雲端刪除/駁回更新
+    async function deleteCloudBooking(id) {
+        if(confirm('確認要駁回並刪除此項申請案件嗎？')) {
+            showLoading(true);
+            try {
+                await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'delete', id: id })
+                });
+                await fetchCloudData();
+            } catch (error) {
+                alert('刪除失敗');
+                showLoading(false);
+            }
+        }
+    }
+</script>
+
+</body>
+</html>
