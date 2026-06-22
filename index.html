@@ -300,6 +300,7 @@
                 <li>為後續子母機歸還消毒、充電作業，請各單位<strong>確實依期取用、歸還</strong>。</li>
                 <li>如有<span style="color: red;">逾期</span>歸還情形，後續將予<strong><span style="color: red;">停權</span></strong>借用，煩請各單位務必配合。</li>
                 <li>母機總量10台，子機總量100台，為利保養維護及調派，請撙節數量，地政處重劃科將依預約情形<span style="color: red;">控留調派</span>。</li>
+				<li>為免電腦暫存檔影響，請按<span style="color: red;">CTRL+F5</span>重新整理，以確認最新預約狀況</li>
                 <li>其他未盡事宜，由地政處重劃科保有最終解釋權力。</li>
             </ol>
             <div style="height: 30px; text-align: center; color: #95a5a6; font-size: 12px; margin-top: 20px;">--- 已滑動至須知最底部 ---</div>
@@ -746,6 +747,7 @@
     function toggleAdminLogin() {
         if (isAdminMode) {
             isAdminMode = false;
+			currentAdminToken = '';
             document.getElementById('adminBtn').textContent = '後臺登入';
             document.getElementById('adminBtn').className = 'btn btn-admin';
             document.getElementById('adminBadge').style.display = 'none';
@@ -755,27 +757,46 @@
         }
     }
 
-    function processLogin() {
-        const u = document.getElementById('username').value;
-        const p = document.getElementById('password').value;
-        if (u === 'doremi' && p === '326266') { 
-            isAdminMode = true;
-            document.getElementById('adminBtn').textContent = '安全登出';
-            document.getElementById('adminBtn').className = 'btn btn-danger';
-            document.getElementById('adminBadge').style.display = 'inline-block';
-            closeModal('loginModal');
-            renderCalendar();
-        } else {
-            alert('帳號或密碼輸入錯誤！');
-        }
-    }
+	let currentAdminToken = '';
+
+	async function processLogin() {
+		const u = document.getElementById('username').value;
+		const p = document.getElementById('password').value;
+
+		if (!u || !p) {
+			alert('請輸入帳號與密碼！');
+			return;
+		}
+
+		try {
+			const response = await fetch(GAS_WEB_APP_URL, {
+				method: 'POST',
+				body: JSON.stringify({ action: 'login', username: u, password: p })
+			});
+			const resData = await response.json();
+
+			if (resData.result === 'success') {
+				isAdminMode = true;
+				currentAdminToken = resData.adminToken;
+				document.getElementById('adminBtn').textContent = '安全登出';
+				document.getElementById('adminBtn').className = 'btn btn-danger';
+				document.getElementById('adminBadge').style.display = 'inline-block';
+				closeModal('loginModal');
+				renderCalendar();
+			} else {
+				alert('帳號或密碼輸入錯誤！');
+			}
+		} catch (error) {
+			alert('登入時發生連線錯誤，請稍後再試。');
+		}
+	}
 
     async function updateCloudStatus(id, newStatus) {
         showLoading(true);
         try {
             await fetch(GAS_WEB_APP_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action: 'update', id: id, status: newStatus })
+                body: JSON.stringify({ action: 'update', id: id, status: newStatus, adminToken: currentAdminToken })
             });
             await fetchCloudData();
         } catch (error) {
@@ -790,7 +811,7 @@
             try {
                 await fetch(GAS_WEB_APP_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ action: 'delete', id: id })
+                    body: JSON.stringify({ action: 'delete', id: id, adminToken: currentAdminToken })
                 });
                 await fetchCloudData();
             } catch (error) {
