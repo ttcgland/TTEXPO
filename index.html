@@ -300,7 +300,7 @@
                 <li>為後續子母機歸還消毒、充電作業，請各單位<strong>確實依期取用、歸還</strong>。</li>
                 <li>如有<span style="color: red;">逾期</span>歸還情形，後續將予<strong><span style="color: red;">停權</span></strong>借用，煩請各單位務必配合。</li>
                 <li>母機總量10台，子機總量100台，為利保養維護及調派，請撙節數量，地政處重劃科將依預約情形<span style="color: red;">控留調派</span>。</li>
-				<li>為免電腦暫存檔影響，請按<span style="color: red;">CTRL+F5</span>重新整理，以確認最新預約狀況</li>
+				<li>為免電腦暫存檔影響，請適時按<span style="color: red;">F5</span>重新整理，以確認最新預約狀況</li>
                 <li>其他未盡事宜，由地政處重劃科保有最終解釋權力。</li>
             </ol>
             <div style="height: 30px; text-align: center; color: #95a5a6; font-size: 12px; margin-top: 20px;">--- 已滑動至須知最底部 ---</div>
@@ -339,12 +339,12 @@
 
     <div class="container-subinfo" style="margin-bottom: 20px;">
         <p class="info-text" style="font-size: 13px;">管理單位：地政處重劃科 | 服務電話：326141#369、370 | 每日可借用時段：09:15 ~ 17:45</p>
-        <p class="info-text" style="color: #e74c3c; font-weight: bold; font-size: 13px; margin-top: 4px;">⚠️ 開放預約借用展期：2026/06/26 至 2026/08/20</p>
+        <p class="info-text" style="color: #e74c3c; font-weight: bold; font-size: 13px; margin-top: 4px;">⚠️ 開放預約借用展期：2026/07/03 至 2026/08/20</p>
     </div>
 
     <div class="calendar-nav">
         <button class="btn btn-secondary" onclick="changeMonth(-1)">◀ 上個月</button>
-        <h2 id="calendarTitle">2026 年 06 月</h2>
+        <h2 id="calendarTitle">2026 年 07 月</h2>
         <button class="btn btn-secondary" onclick="changeMonth(1)">下個月 ▶</button>
     </div>
 
@@ -434,7 +434,6 @@
             <label for="password">密碼</label>
             <input type="password" id="password" value="">
         </div>
-        <!--<p class="info-text" style="margin-bottom:15px;">預設測試帳密：admin / admin1234</p>-->
         <div class="form-actions" style="margin-top:0; padding-top:10px;">
             <button type="button" class="btn btn-secondary" onclick="closeModal('loginModal')">取消</button>
             <button type="button" class="btn btn-primary" onclick="processLogin()">登入</button>
@@ -446,7 +445,7 @@
     const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxa6nrxjPqYUzpy84O-_RchmCfOhl1M4OTjZBuNBtLjYjzfaryPgiWIxUJfIVM17ajGrA/exec';
 
     let currentYear = 2026;
-    let currentMonth = 5; 
+    let currentMonth = 6; 
     let isAdminMode = false;
     let bookingData = [];
 
@@ -454,7 +453,7 @@
 
     window.onload = function() {
         const today = new Date();
-        if (today.getFullYear() === 2026 && today.getMonth() >= 5 && today.getMonth() <= 7) {
+        if (today.getFullYear() === 2026 && today.getMonth() >= 6 && today.getMonth() <= 7) {
             currentMonth = today.getMonth();
         }
 
@@ -462,9 +461,9 @@
         setupDisclaimerScrollListener(); 
         fetchCloudData(); 
         
-        document.getElementById('startDate').min = "2026-06-26";
+        document.getElementById('startDate').min = "2026-07-03";
         document.getElementById('startDate').max = "2026-08-20";
-        document.getElementById('endDate').min = "2026-06-26";
+        document.getElementById('endDate').min = "2026-07-03";
         document.getElementById('endDate').max = "2026-08-20";
     };
 
@@ -582,7 +581,7 @@
         cell.appendChild(numDiv);
 
 		const dayString = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        const isOutOfActivityRange = (dayString < "2026-06-26" || dayString > "2026-08-20");
+        const isOutOfActivityRange = (dayString < "2026-07-03" || dayString > "2026-08-20");
 
         if (isOutOfActivityRange) {
             cell.classList.add('out-of-range');
@@ -650,8 +649,8 @@
         if (targetMonth > 11) { targetMonth = 0; targetYear++; }
         else if (targetMonth < 0) { targetMonth = 11; targetYear--; }
         
-        if (targetYear !== 2026 || targetMonth < 5 || targetMonth > 7) {
-            alert('系統僅開放切換博覽會活動展期月份 (2026年6月 ~ 8月)。');
+        if (targetYear !== 2026 || targetMonth < 6 || targetMonth > 7) {
+            alert('系統僅開放切換博覽會活動展期月份 (2026年7月 ~ 8月)。');
             return;
         }
         
