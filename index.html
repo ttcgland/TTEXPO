@@ -370,15 +370,22 @@
                     <label for="contact">聯絡人 *</label>
                     <input type="text" id="contact" required>
                 </div>
-                <div class="form-group">
-                    <label for="phone">聯絡方式 (電話) *</label>
+				<div class="form-group">
+					<label for="email">E-MAIL *</label>
+					<input type="email" id="email" required>
+				</div>
+			</div>
+			<div class="form-row">	
+				<div class="form-group">
+                    <label for="phone">聯絡方式(電話) *</label>
                     <input type="text" id="phone" required placeholder="例如：326141#369">
                 </div>
-            </div>
-            <div class="form-group">
-                <label for="email">E-MAIL *</label>
-                <input type="email" id="email" required>
-            </div>
+				<div class="form-group">
+                    <label for="mobile">聯絡方式(手機) *</label>
+                    <input type="text" id="mobile" required placeholder="例如：0912-345-678">
+                </div>
+			</div>
+            
             <div class="form-group">
                 <label for="purpose">事由 *</label>
                 <textarea id="purpose" rows="2" required placeholder="請輸入導覽活動用途說明"></textarea>
@@ -711,8 +718,9 @@
             dept: document.getElementById('dept').value,
             section: document.getElementById('section').value,
             contact: document.getElementById('contact').value,
-            phone: document.getElementById('phone').value,
             email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            mobile: document.getElementById('mobile').value,
             purpose: document.getElementById('purpose').value,
             qtyMother: qtyMother,
             qtyChild: qtyChild,
