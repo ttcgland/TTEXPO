@@ -572,83 +572,102 @@
     }
 
     function createDayCell(gridTarget, year, month, day, isOtherMonth) {
-        let targetDate = new Date(year, month, day);
-        let y = targetDate.getFullYear();
-        let m = targetDate.getMonth();
-        let d = targetDate.getDate();
+		let targetDate = new Date(year, month, day);
+		let y = targetDate.getFullYear();
+		let m = targetDate.getMonth();
+		let d = targetDate.getDate();
 
-        const cell = document.createElement('div');
-        cell.className = 'calendar-day';
-        const dayOfWeek = targetDate.getDay();
-        cell.setAttribute('data-weekday', weekdaysTitle[dayOfWeek]);
+		const cell = document.createElement('div');
+		cell.className = 'calendar-day';
+		const dayOfWeek = targetDate.getDay();
+		cell.setAttribute('data-weekday', weekdaysTitle[dayOfWeek]);
 
-        const numDiv = document.createElement('div');
-        numDiv.className = 'day-number';
-        numDiv.textContent = d;
-        if(dayOfWeek === 0 || dayOfWeek === 6) numDiv.classList.add('weekend-day');
-        cell.appendChild(numDiv);
+		const numDiv = document.createElement('div');
+		numDiv.className = 'day-number';
+		numDiv.textContent = d;
+		if(dayOfWeek === 0 || dayOfWeek === 6) numDiv.classList.add('weekend-day');
+		cell.appendChild(numDiv);
 
+		// 1. 設定日期範圍邏輯
 		const dayString = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        const isOutOfActivityRange = (dayString < "2026-07-03" || dayString > "2026-08-20");
+		const isOutOfActivityRange = (dayString < "2026-07-03" || dayString > "2026-08-20");
 
-        if (isOutOfActivityRange) {
-            cell.classList.add('out-of-range');
-            cell.onclick = function() {
-                alert('非博覽會展出時間');
-            };
-        } else if (isOtherMonth) {
-            cell.classList.add('other-month');
-            cell.onclick = function() {
-                alert('請先切換至該月份再進行點選預約。');
-            };
-        } else {
-            cell.onclick = function(e) {
-                if(e.target.tagName !== 'BUTTON') openBookingModal(y, m, d);
-            };
-        }
+		if (isOutOfActivityRange) {
+			cell.classList.add('out-of-range');
+			cell.onclick = function() { alert('非博覽會展出時間'); };
+		} else if (isOtherMonth) {
+			cell.classList.add('other-month');
+			cell.onclick = function() { alert('請先切換至該月份再進行點選預約。'); };
+		} else {
+			cell.onclick = function(e) {
+				if(e.target.tagName !== 'BUTTON') openBookingModal(y, m, d);
+			};
+		}
 
-        const todayEvents = bookingData.filter(evt => dayString >= evt.startDate && dayString <= evt.endDate);
-        const listContainer = document.createElement('div');
-        listContainer.className = 'event-list';
+		// 2. 篩選與渲染預約內容
+		const todayEvents = bookingData.filter(evt => dayString >= evt.startDate && dayString <= evt.endDate);
+		const listContainer = document.createElement('div');
+		listContainer.className = 'event-list';
 
-        todayEvents.forEach(evt => {
-            const evtDiv = document.createElement('div');
-            evtDiv.className = `event-item ${evt.status}`;
-            let statusText = evt.status === 'approved' ? '已通過' : '待審核';
+		todayEvents.forEach(evt => {
+			const evtDiv = document.createElement('div');
+			evtDiv.className = `event-item ${evt.status}`;
+			
+			// 判斷是否為跨日預約
+			let displayStart = evt.startTime;
+			let displayEnd = evt.endTime;
+			
+			if (evt.startDate !== evt.endDate) {
+				// 如果是開始的那一天
+				if (dayString === evt.startDate) {
+					const endParts = evt.endDate.split('-');
+					displayEnd = `${parseInt(endParts[1])}/${parseInt(endParts[2])}`;
+				} 
+				// 如果是結束的那一天
+				else if (dayString === evt.endDate) {
+					const startParts = evt.startDate.split('-');
+					displayStart = `${parseInt(startParts[1])}/${parseInt(startParts[2])}`;
+				}
+				// 如果是中間的天數
+				else {
+					displayStart = "09:15";
+					displayEnd = "17:45";
+				}
+			}
 
-            const motherQty = evt.qtyMother || 0;
-            const childQty = evt.qtyChild || 0;
+			let statusText = evt.status === 'approved' ? '已通過' : '待審核';
 
-            evtDiv.innerHTML = `
-                <strong>${evt.startTime} ~ ${evt.endTime}</strong> [${statusText}]<br>
-                ${evt.dept} ─ ${evt.section}<br>
-                借用人: ${evt.contact}<br>
-                數量: 母 ${motherQty} / 子 ${childQty} 台
-            `;
+			evtDiv.innerHTML = `
+				<strong>${displayStart} ~ ${displayEnd}</strong> [${statusText}]<br>
+				${evt.dept} ─ ${evt.section}<br>
+				借用人: ${evt.contact}<br>
+				數量: 母 ${evt.qtyMother || 0} / 子 ${evt.qtyChild || 0} 台
+			`;
 
-            if (isAdminMode) {
-                const actionDiv = document.createElement('div');
-                actionDiv.className = 'event-admin-actions';
-                if (evt.status === 'pending') {
-                    const approveBtn = document.createElement('button');
-                    approveBtn.className = 'btn btn-primary btn-mini';
-                    approveBtn.textContent = '核准';
-                    approveBtn.onclick = function() { updateCloudStatus(evt.id, 'approved'); };
-                    actionDiv.appendChild(approveBtn);
-                }
-                const rejectBtn = document.createElement('button');
-                rejectBtn.className = 'btn btn-danger btn-mini';
-                rejectBtn.textContent = '駁回';
-                rejectBtn.onclick = function() { deleteCloudBooking(evt.id); };
-                actionDiv.appendChild(rejectBtn);
-                evtDiv.appendChild(actionDiv);
-            }
-            listContainer.appendChild(evtDiv);
-        });
+			// 管理者功能
+			if (isAdminMode) {
+				const actionDiv = document.createElement('div');
+				actionDiv.className = 'event-admin-actions';
+				if (evt.status === 'pending') {
+					const approveBtn = document.createElement('button');
+					approveBtn.className = 'btn btn-primary btn-mini';
+					approveBtn.textContent = '核准';
+					approveBtn.onclick = function() { updateCloudStatus(evt.id, 'approved'); };
+					actionDiv.appendChild(approveBtn);
+				}
+				const rejectBtn = document.createElement('button');
+				rejectBtn.className = 'btn btn-danger btn-mini';
+				rejectBtn.textContent = '駁回';
+				rejectBtn.onclick = function() { deleteCloudBooking(evt.id); };
+				actionDiv.appendChild(rejectBtn);
+				evtDiv.appendChild(actionDiv);
+			}
+			listContainer.appendChild(evtDiv);
+		});
 
-        cell.appendChild(listContainer);
-        gridTarget.appendChild(cell);
-    }
+		cell.appendChild(listContainer);
+		gridTarget.appendChild(cell);
+	}
 
     function changeMonth(direction) {
         let targetMonth = currentMonth + direction;
